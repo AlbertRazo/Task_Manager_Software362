@@ -3,4 +3,5 @@
 Project Description: An application that helps users get more task done with different enforced features.
 
 Language: Pyhton, Tkinter (UI libary)
+
 IDE: VSCode
