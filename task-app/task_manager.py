@@ -53,7 +53,7 @@ def logout():
 
 # Initialize the main application window
 root = ctk.CTk()
-root.title("Tasks Manager Stage 1 Application")
+root.title("Tasks Manager Application")
 root.geometry("800x600")
 
 # Show the login screen
