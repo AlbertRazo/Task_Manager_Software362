@@ -50,3 +50,14 @@ def logout():
     for widget in root.winfo_children():
         widget.destroy()   # erase to do list and content
     show_login()           # go back to log in screen
+
+# Initialize the main application window
+root = ctk.CTk()
+root.title("Tasks Manager Application")
+root.geometry("800x600")
+
+# Show the login screen
+show_login()
+
+# Start the Tkinter event loop
+root.mainloop()
