@@ -62,3 +62,4 @@ show_login()
 # Start the Tkinter event loop
 root.mainloop()
 
+#End of stage 1 code
