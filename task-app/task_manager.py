@@ -15,9 +15,7 @@ tasks = []
 # Keeping points
 points = 0
 
-
-
-# Hardcoded credentials (for demo)
+# Example credentials
 USERNAME = "user"
 PASSWORD = "1234"
 
@@ -25,9 +23,10 @@ def show_login():
     login_frame = ctk.CTkFrame(root)
     login_frame.pack(fill="both", expand=True)
 
+    #App name on top of the page
     title = ctk.CTkLabel(login_frame, text="TASKS MANAGER", font=("Times New Roman", 24, "bold"))
     title.pack(pady=20)
-
+    #boxes for username and password
     user_entry = ctk.CTkEntry(login_frame, placeholder_text="Username", width=200)
     user_entry.place(relx=0.5, rely=0.45, anchor="center")
     # Cover password while being typed out
@@ -35,12 +34,13 @@ def show_login():
     pass_entry.place(relx=0.5, rely=0.55, anchor="center")
 
 
-def attempt_login():
-    if user_entry.get() == USERNAME and pass_entry.get() == PASSWORD:
-        login_frame.destroy()   # remove login page
-        show_todo_app()        # load main app
-    else:
-        messagebox.showerror("Error", "Invalid username or password!")
+    #try loging in, if username and password is incorrect then it will display error
+    def attempt_login():
+        if user_entry.get() == USERNAME and pass_entry.get() == PASSWORD:
+            login_frame.destroy()   # remove login page
+            show_todo_app()        # load main app
+        else:
+            messagebox.showerror("Error", "Invalid username or password!")
 
     login_button = ctk.CTkButton(login_frame, text="Login", command=attempt_login, width=100)
     login_button.place(relx=0.5, rely=0.65, anchor="center")
@@ -51,15 +51,4 @@ def logout():
         widget.destroy()   # erase to do list and content
     show_login()           # go back to log in screen
 
-# Initialize the main application window
-root = ctk.CTk()
-root.title("Tasks Manager Application")
-root.geometry("800x600")
-
-# Show the login screen
-show_login()
-
-# Start the Tkinter event loop
-root.mainloop()
-
-#End of stage 1 code
+# End of Part 1
