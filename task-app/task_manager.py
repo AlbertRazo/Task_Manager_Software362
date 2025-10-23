@@ -147,4 +147,15 @@ def take_picture(task_name):
 
     cap.release()
     cv2.destroyAllWindows()
+
+    # Initialize the main application window
+root = ctk.CTk()
+root.title("Tasks Manager Application")
+root.geometry("800x600")
+
+# Show the login screen
+show_login()
+
+# Start the Tkinter event loop
+root.mainloop()
     #end of part 3
