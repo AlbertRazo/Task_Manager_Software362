@@ -1,15 +1,13 @@
-# CPSC 362 Project: TASKS MANAGER APPLICATION
-
 import customtkinter as ctk
 from tkinter import messagebox
 import cv2
 import os
+import json
 from datetime import datetime
 from plyer import notification
 import threading
 import time
 from PIL import Image
-
 
 # ----------------------------- Global State -----------------------------
 # Store tasks as (task_name, checkbox, task_frame, var, interval_minutes)
@@ -33,6 +31,19 @@ points_label = None
 entry = None
 task_frame = None
 reminder_var = None
+
+# Managing user data
+users_data = "users.json"
+
+def load_users():
+    if not os.path.exists(users_data):
+        return {}
+    with open(users_data, "r") as f:
+        return json.load(f)
+
+def save_users(users):
+    with open(users_data, "w") as f:
+        json.dump(users, f, indent=4)
 
 
 # ----------------------------- Helpers -----------------------------
@@ -120,59 +131,49 @@ def remove_task():
 
 
 def add_task():
-    """Create a new task row with checkbox, camera button, and reminder thread."""
-    global entry, task_frame, reminder_var
+    task_name = entry.get()
+    if task_name != "":
 
-    task_name = entry.get().strip()
-    if task_name == "":
+        task_item = ctk.CTkFrame(task_frame)
+        task_item.pack(pady=2, fill="x", anchor="w")
+
+        var = ctk.IntVar()
+        checkbox = ctk.CTkCheckBox(
+            task_item, text=task_name, font=("Open Sans", 14),
+            variable=var, command=lambda v=var: adjust_points(v),
+            checkbox_width=20, checkbox_height=20,
+        )
+        checkbox.pack(side="left", padx=5, pady=5)
+
+        cam_button = ctk.CTkButton(
+            task_item, text="📸", width=40,
+            command=lambda t=task_name: take_picture(t)
+        )
+        cam_button.pack(side="right", padx=5)
+
+        # --- FIXED INTERVAL HANDLING ---
+        interval_str = reminder_var.get()
+        interval = int(interval_str.split()[0])  # extracts the number only
+
+        # Store task only once (corrected)
+        tasks.append((task_name, checkbox, task_item, var, interval))
+
+        # Start reminder thread
+        threading.Thread(target=reminder_loop, args=(task_name, var, interval), daemon=True).start()
+
+        entry.delete(0, "end")
+
+    else:
         messagebox.showwarning("Warning", "You must enter a task.")
-        return
-
-    task_item = ctk.CTkFrame(task_frame)
-    task_item.pack(pady=4, fill="x", anchor="w")
-
-    var = ctk.IntVar(value=0)
-    checkbox = ctk.CTkCheckBox(
-        task_item,
-        text=task_name,
-        font=("Open Sans", 14),
-        variable=var,
-        command=lambda v=var: adjust_points(v),
-        checkbox_width=20,
-        checkbox_height=20,
-    )
-    checkbox.pack(side="left", padx=8, pady=8)
-
-    cam_button = ctk.CTkButton(
-        task_item,
-        text="📸",
-        width=40,
-        command=lambda t=task_name: take_picture(t),
-    )
-    cam_button.pack(side="right", padx=6)
-
-    try:
-        interval = int(reminder_var.get())
-    except Exception:
-        interval = 5
-
-    task_tuple = (task_name, checkbox, task_item, var, interval)
-    tasks.append(task_tuple)
-
-    threading.Thread(
-        target=reminder_loop, args=(task_name, var, interval), daemon=True
-    ).start()
-
-    entry.delete(0, "end")
 
 
 # ----------------------------- UI Screens -----------------------------
 def show_login():
-    """Simple login gate before main app."""
+    # Login + Create an account for users
     login_frame = ctk.CTkFrame(root)
     login_frame.pack(fill="both", expand=True)
 
-    # --- Background image setup ---
+    # Background image
     bg_image = ctk.CTkImage(
         light_image=Image.open("classroom_bg.png"),
         size=(520, 720)
@@ -180,56 +181,84 @@ def show_login():
     bg_label = ctk.CTkLabel(login_frame, image=bg_image, text="")
     bg_label.place(relx=0.5, rely=0.5, anchor="center")
 
-    # --- Foreground elements (text boxes, buttons) ---
+    # Title
     title = ctk.CTkLabel(
-    login_frame,
-    text="TASKS MANAGER",
-    font=("Times New Roman", 26, "bold"),
-    text_color="dodgerblue",
-    fg_color="#CBE2FA"
+        login_frame,
+        text="TASKS MANAGER",
+        font=("Times New Roman", 26, "bold"),
+        text_color="dodgerblue",
+        fg_color="#CBE2FA"
     )
     title.place(relx=0.5, rely=0.15, anchor="center")
 
-    user_entry = ctk.CTkEntry(
-    login_frame,
-    placeholder_text="Username",
-    width=220,
-    fg_color="#E6EEF9",              # soft blue-gray box
-    text_color="#000000",            # dark text when typing
-    placeholder_text_color="#6A747C" # gray placeholder
-    )
+    # Username + Password fields
+    user_entry = ctk.CTkEntry(login_frame, placeholder_text="Username", width=220)
     user_entry.place(relx=0.5, rely=0.30, anchor="center")
-    
-    pass_entry = ctk.CTkEntry(
-    login_frame,
-    placeholder_text="Password",
-    show="*",
-    width=220,
-    fg_color="#E6EEF9",
-    text_color="#000000",
-    placeholder_text_color="#6C757D"
-    )
+
+    pass_entry = ctk.CTkEntry(login_frame, placeholder_text="Password", show="*", width=220)
     pass_entry.place(relx=0.5, rely=0.35, anchor="center")
 
+    # -----------------------
+    # LOGIN FUNCTION
+    # -----------------------
     def attempt_login():
-        if user_entry.get() == USERNAME and pass_entry.get() == PASSWORD:
+        username = user_entry.get()
+        password = pass_entry.get()
+
+        users = load_users()
+
+        if username in users and users[username] == password:
             login_frame.destroy()
             show_todo_app()
         else:
             messagebox.showerror("Error", "Invalid username or password!")
 
+    # Login button
     login_button = ctk.CTkButton(
-    login_frame,
-    text="Login",
-    command=attempt_login,
-    width=120,
-    height=35,
-    fg_color="#007BFF",      # Blue background
-    hover_color="#dodgerblue",   # Darker blue when hovered
-    text_color="#FFFFFF"     # Dark text
-)
-
+        login_frame,
+        text="Login",
+        command=attempt_login,
+        width=120,
+        height=35,
+        fg_color="#007BFF",
+        hover_color="#0056b3",
+        text_color="#FFFFFF"
+    )
     login_button.place(relx=0.5, rely=0.45, anchor="center")
+
+    # -----------------------
+    # CREATE ACCOUNT FUNCTION
+    # -----------------------
+    def create_account():
+        username = user_entry.get()
+        password = pass_entry.get()
+        users = load_users()
+
+        if username == "" or password == "":
+            messagebox.showwarning("Warning", "Username and password cannot be empty.")
+            return
+
+        if username in users:
+            messagebox.showwarning("Warning", "Username already exists. Choose another.")
+            return
+
+        users[username] = password
+        save_users(users)
+        messagebox.showinfo("Success", "Account created! You can now log in.")
+
+    # Create Account button
+    signup_button = ctk.CTkButton(
+        login_frame,
+        text="Create Account",
+        command=create_account,
+        width=120,
+        height=35,
+        fg_color="#28a745",
+        hover_color="#208838",
+        text_color="#FFFFFF"
+    )
+    signup_button.place(relx=0.5, rely=0.52, anchor="center")
+
 
 
 def logout():
@@ -266,7 +295,7 @@ def show_todo_app():
     reminder_var = ctk.StringVar(value="5")
     reminder_menu = ctk.CTkOptionMenu(
         input_row,
-        values=["1", "5", "10", "15", "30", "60"],
+        values=["5 minutes", "10 minutes", "15 minutes", "30 minutes", "60 minutes"],
         variable=reminder_var,
         width=80,
     )
@@ -292,4 +321,4 @@ def show_todo_app():
 if __name__ == "__main__":
     show_login()
     root.mainloop()
-#end of part 4
+    #end of part 5
